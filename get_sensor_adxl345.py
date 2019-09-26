@@ -11,6 +11,7 @@
 import signal
 import sys
 import time
+import struct
 
 import smbus
 
@@ -24,7 +25,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-sr = 100.0
+sr = 3200
 ADXL345_ADDRESS          = 0x53
 ADXL345_REG_DEVID        = 0x00 # Device ID
 ADXL345_REG_DATAX0       = 0x32 # X-axis data 0 (6 bytes for X/Y/Z)
@@ -53,23 +54,23 @@ ADXL345_RANGE_8_G        = 0x02 # +/-  8g
 ADXL345_RANGE_16_G       = 0x03 # +/- 16g
 
 
-
 # Get I2C bus
 bus = smbus.SMBus(1)
 
 # condiguring the adxl345
-bus.write_byte_data(ADXL345_ADDRESS, ADXL345_REG_BW_RATE , ADXL345_DATARATE_100_HZ)
-bus.write_byte_data(ADXL345_ADDRESS, 0x2D, 0x08)
+bus.write_byte_data(ADXL345_ADDRESS, ADXL345_REG_BW_RATE, ADXL345_DATARATE_3200_HZ)
+bus.write_byte_data(ADXL345_ADDRESS, ADXL345_REG_POWER_CTL, 0x08)
 bus.write_byte_data(ADXL345_ADDRESS, ADXL345_REG_DATA_FORMAT, ADXL345_RANGE_2_G)
 
 with open(ofile, "w") as f:
     while 1:
 
         initial_time = time.perf_counter()
-        data = bus.read_i2c_block_data(ADXL345_ADDRESS, 0x32, 6)
-        X = ((data[0] & 0x03) * 256) + data[1]
-        Y = ((data[2] & 0x03) * 256) + data[3]
-        Z = ((data[4] & 0x03) * 256) + data[5]
+        data = bus.read_i2c_block_data(ADXL345_ADDRESS, ADXL345_REG_DATAX0, 6)
+        # X, Y, Z = struct.unpack('<hhh', data)
+        X = (data[0] << 8 | data[1]) >> 4
+        Y = (data[2] << 8 | data[3]) >> 4
+        Z = (data[4] << 8 | data[5]) >> 4
 
         if X > 511 :
         	X -= 1024
