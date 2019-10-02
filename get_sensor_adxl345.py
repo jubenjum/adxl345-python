@@ -58,19 +58,19 @@ ADXL345_RANGE_16_G       = 0x03 # +/- 16g
 bus = smbus.SMBus(1)
 
 # condiguring the adxl345
-bus.write_byte_data(ADXL345_ADDRESS, ADXL345_REG_BW_RATE, ADXL345_DATARATE_3200_HZ)
-bus.write_byte_data(ADXL345_ADDRESS, ADXL345_REG_POWER_CTL, 0x08)
-bus.write_byte_data(ADXL345_ADDRESS, ADXL345_REG_DATA_FORMAT, ADXL345_RANGE_2_G)
+bus.write_byte_data(ADXL345_ADDRESS, 0x2C, 0x0A) # sampling rate
+bus.write_byte_data(ADXL345_ADDRESS, 0x2D, 0x08) # power control
+bus.write_byte_data(ADXL345_ADDRESS, 0x31, 0x08) # data format
+time.sleep(1)
 
 with open(ofile, "w") as f:
     while 1:
 
         initial_time = time.perf_counter()
         data = bus.read_i2c_block_data(ADXL345_ADDRESS, ADXL345_REG_DATAX0, 6)
-        # X, Y, Z = struct.unpack('<hhh', data)
-        X = (data[0] << 8 | data[1]) >> 4
-        Y = (data[2] << 8 | data[3]) >> 4
-        Z = (data[4] << 8 | data[5]) >> 4
+        X = ((data[1] & 0x03) * 256 + (data[0] & 0xFF))
+        Y = ((data[3] & 0x03) * 256 + (data[2] & 0xFF))
+        Z = ((data[5] & 0x03) * 256 + (data[4] & 0xFF))
 
         if X > 511 :
         	X -= 1024
